@@ -18,6 +18,7 @@ import (
 	"context"
 	gonet "net"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -28,9 +29,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/metrictest"
+
+	"go.opentelemetry.io/contrib/instrumentation/host"
 )
 
 func getMetric(impl *metrictest.MeterImpl, name string, lbl attribute.KeyValue) float64 {
@@ -220,7 +222,11 @@ func TestHostNetwork(t *testing.T) {
 	require.NoError(t, err)
 
 	// As we are going to read the /proc file system for this info, sleep a while:
-	time.Sleep(time.Second)
+	if runtime.GOOS == "windows" {
+		time.Sleep(10 * time.Second)
+	} else {
+		time.Sleep(1 * time.Second)
+	}
 
 	impl.RunAsyncInstruments()
 
