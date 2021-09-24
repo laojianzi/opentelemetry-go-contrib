@@ -18,7 +18,6 @@ import (
 	"context"
 	gonet "net"
 	"os"
-	"runtime"
 	"testing"
 	"time"
 
@@ -222,10 +221,15 @@ func TestHostNetwork(t *testing.T) {
 	require.NoError(t, err)
 
 	// As we are going to read the /proc file system for this info, sleep a while:
-	if runtime.GOOS == "windows" {
-		time.Sleep(10 * time.Second)
-	} else {
-		time.Sleep(1 * time.Second)
+	for {
+		hostAfter, err := net.IOCountersWithContext(ctx, false)
+		require.NoError(t, err)
+		time.Sleep(time.Second / 2)
+
+		if uint64(howMuch) <= hostAfter[0].BytesSent-hostBefore[0].BytesSent &&
+			uint64(howMuch) <= hostAfter[0].BytesRecv-hostBefore[0].BytesRecv {
+			break
+		}
 	}
 
 	impl.RunAsyncInstruments()
