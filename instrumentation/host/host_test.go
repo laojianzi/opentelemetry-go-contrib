@@ -221,28 +221,17 @@ func TestHostNetwork(t *testing.T) {
 	require.NoError(t, err)
 
 	// As we are going to read the /proc file system for this info, sleep a while:
-	for {
+	require.Eventually(t, func() bool {
 		hostAfter, err := net.IOCountersWithContext(ctx, false)
 		require.NoError(t, err)
-		time.Sleep(time.Second / 2)
 
-		if uint64(howMuch) <= hostAfter[0].BytesSent-hostBefore[0].BytesSent &&
-			uint64(howMuch) <= hostAfter[0].BytesRecv-hostBefore[0].BytesRecv {
-			break
-		}
-	}
+		return uint64(howMuch) <= hostAfter[0].BytesSent - hostBefore[0].BytesSent &&
+			uint64(howMuch) <= hostAfter[0].BytesRecv - hostBefore[0].BytesRecv
+	}, 30*time.Second, time.Second/2)
 
 	impl.RunAsyncInstruments()
-
-	hostAfter, err := net.IOCountersWithContext(ctx, false)
-	require.NoError(t, err)
-
 	hostTransmit := getMetric(impl, "system.network.io", host.AttributeNetworkTransmit[0])
 	hostReceive := getMetric(impl, "system.network.io", host.AttributeNetworkReceive[0])
-
-	// Check that the network transmit/receive used is greater than before:
-	require.LessOrEqual(t, uint64(howMuch), hostAfter[0].BytesSent-hostBefore[0].BytesSent)
-	require.LessOrEqual(t, uint64(howMuch), hostAfter[0].BytesRecv-hostBefore[0].BytesRecv)
 
 	// Check that the recorded measurements reflect the same change:
 	require.LessOrEqual(t, uint64(howMuch), uint64(hostTransmit)-hostBefore[0].BytesSent)
