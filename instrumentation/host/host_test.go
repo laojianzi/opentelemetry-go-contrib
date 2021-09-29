@@ -225,8 +225,8 @@ func TestHostNetwork(t *testing.T) {
 		hostAfter, err := net.IOCountersWithContext(ctx, false)
 		require.NoError(t, err)
 
-		return uint64(howMuch) <= hostAfter[0].BytesSent - hostBefore[0].BytesSent &&
-			uint64(howMuch) <= hostAfter[0].BytesRecv - hostBefore[0].BytesRecv
+		return uint64(howMuch) <= hostAfter[0].BytesSent-hostBefore[0].BytesSent &&
+			uint64(howMuch) <= hostAfter[0].BytesRecv-hostBefore[0].BytesRecv
 	}, 30*time.Second, time.Second/2)
 
 	impl.RunAsyncInstruments()
