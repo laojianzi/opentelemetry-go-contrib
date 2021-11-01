@@ -223,10 +223,10 @@ func TestHostNetwork(t *testing.T) {
 		hostAfter, err := net.IOCountersWithContext(ctx, false)
 		require.NoError(t, err)
 
-		time.Sleep(30*time.Second)
+		time.Sleep(20*time.Second)
 		return uint64(howMuch) <= hostAfter[0].BytesSent-hostBefore[0].BytesSent &&
 			uint64(howMuch) <= hostAfter[0].BytesRecv-hostBefore[0].BytesRecv
-	}, 30*time.Second, time.Second/2)
+	}, 20*time.Second, time.Second/2)
 
 	provider.RunAsyncInstruments()
 	hostTransmit := getMetric(provider, "system.network.io", host.AttributeNetworkTransmit[0])
