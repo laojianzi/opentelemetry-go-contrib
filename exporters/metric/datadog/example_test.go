@@ -58,18 +58,22 @@ func ExampleExporter() {
 
 	go func() {
 		defer exp.Close()
-		processor := basic.New(selector, exp)
-		pusher := controller.New(processor, controller.WithExporter(exp), controller.WithCollectPeriod(time.Second*10),
-			controller.WithResource(resource.Default()),
-			controller.WithResource(resource.NewSchemaless(semconv.ServiceNameKey.String("ExampleExporter"))))
+		processor := basic.NewFactory(selector, exp)
 		ctx := context.Background()
-		err := pusher.Start(ctx)
+		serviceName, err := resource.New(ctx, resource.WithAttributes(semconv.ServiceNameKey.String("ExampleExporter")))
 		if err != nil {
 			panic(err)
 		}
 
-		defer func() { handleErr(pusher.Stop(ctx)) }()
-		global.SetMeterProvider(pusher.MeterProvider())
+		cont := controller.New(processor, controller.WithExporter(exp), controller.WithCollectPeriod(time.Second*10),
+			controller.WithResource(resource.Default()), controller.WithResource(serviceName))
+		err = cont.Start(ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		defer func() { handleErr(cont.Stop(ctx)) }()
+		global.SetMeterProvider(cont)
 		meter := global.Meter("marwandist")
 		m := metric.Must(meter).NewInt64Histogram("myrecorder")
 		meter.RecordBatch(context.Background(), []attribute.KeyValue{attribute.Int("l", 1)},
@@ -103,7 +107,7 @@ func ExampleExporter() {
 	}
 
 	// Output:
-	// myrecorder.max:100|g|#env:dev,l:1,service.name:ExampleExporter,telemetry.sdk.language:go,telemetry.sdk.name:opentelemetry,telemetry.sdk.version:1.0.0
+	// myrecorder.max:100|g|#env:dev,l:1,service.name:ExampleExporter,telemetry.sdk.language:go,telemetry.sdk.name:opentelemetry,telemetry.sdk.version:1.1.0
 	//
 }
 
